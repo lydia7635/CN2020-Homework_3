@@ -51,8 +51,8 @@ int main(int argc, char* argv[]){
     int port[3], i;
     
     if(argc != 7){
-        fprintf(stderr,"用法: %s <sender IP> <recv IP> <sender port> <agent port> <recv port> <loss_rate>\n", argv[0]);
-        fprintf(stderr, "例如: ./agent local local 8887 8888 8889 0.3\n");
+        fprintf(stderr,"Usage: %s <sender IP> <recv IP> <sender port> <agent port> <recv port> <loss_rate>\n", argv[0]);
+        fprintf(stderr, "E.g., ./agent local local 8887 8888 8889 0.3\n");
         exit(1);
     } else {
         setIP(ip[0], argv[1]);
@@ -95,7 +95,7 @@ int main(int argc, char* argv[]){
     recv_size = sizeof(receiver);
     tmp_size = sizeof(tmp_addr);
 
-    printf("可以開始測囉^Q^\n");
+    printf("START ^Q^\n");
     printf("sender info: ip = %s port = %d and receiver info: ip = %s port = %d\n",ip[0], port[0], ip[2], port[2]);
     printf("agent info: ip = %s port = %d\n", ip[1], port[1]);
 
@@ -117,7 +117,7 @@ int main(int argc, char* argv[]){
             if(strcmp(ipfrom, ip[0]) == 0 && portfrom == port[0]) {
                 /*segment from sender, not ack*/
                 if(s_tmp.head.ack) {
-                    fprintf(stderr, "收到來自 sender 的 ack segment\n");
+                    fprintf(stderr, "received ack segment from sender. ERROR!\n");
                     exit(1);
                 }
                 total_data++;
@@ -140,7 +140,7 @@ int main(int argc, char* argv[]){
             } else if(strcmp(ipfrom,ip[2]) == 0 && portfrom == port[2]) {
                 /*segment from receiver, ack*/
                 if(s_tmp.head.ack == 0) {
-                    fprintf(stderr, "收到來自 receiver 的 non-ack segment\n");
+                    fprintf(stderr, "receive non-ack segment from receiver. ERROR!\n");
                     exit(1);
                 }
                 if(s_tmp.head.fin == 1) {
