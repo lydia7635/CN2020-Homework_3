@@ -1,3 +1,6 @@
 agent
 receiver
-server
+sender
+
+receiver_dir
+sender_dir

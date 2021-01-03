@@ -18,21 +18,26 @@
 #include <netinet/in.h>
 #include <string.h>
 
+#define IPlen 50
+#define MAXDATA 4096
+
 typedef struct {
-	int length;
-	int seqNumber;
-	int ackNumber;
-	int fin;
-	int syn;
-	int ack;
+    int length;       // specified data length actually
+    int seqNumber;    // for sender
+    int ackNumber;    // for receiver to ack
+    int fin;          // boolean
+    int syn;          // boolean, but we set it to 0
+    int ack;          // boolean
+    int winSize;
+    int base;
 } header;
 
 typedef struct{
-	header head;
-	char data[1000];
+    header head;
+    char data[MAXDATA];
 } segment;
 
-void setIP(char *dst, char *src) {
+void setIP(char *dst, const char *src) {
     if(strcmp(src, "0.0.0.0") == 0 || strcmp(src, "local") == 0
             || strcmp(src, "localhost")) {
         sscanf("127.0.0.1", "%s", dst);
@@ -47,12 +52,12 @@ int main(int argc, char* argv[]){
     segment s_tmp;
     struct sockaddr_in sender, agent, receiver, tmp_addr;
     socklen_t sender_size, recv_size, tmp_size;
-    char ip[3][50];
+    char ip[3][IPlen];
     int port[3], i;
     
     if(argc != 7){
         fprintf(stderr,"Usage: %s <sender IP> <recv IP> <sender port> <agent port> <recv port> <loss_rate>\n", argv[0]);
-        fprintf(stderr, "E.g., ./agent local local 8887 8888 8889 0.3\n");
+        fprintf(stderr, "E.g., ./agent local local 7001 7002 7003 0.3\n");
         exit(1);
     } else {
         setIP(ip[0], argv[1]);
@@ -95,14 +100,17 @@ int main(int argc, char* argv[]){
     recv_size = sizeof(receiver);
     tmp_size = sizeof(tmp_addr);
 
-    printf("START ^Q^\n");
-    printf("sender info: ip = %s port = %d and receiver info: ip = %s port = %d\n",ip[0], port[0], ip[2], port[2]);
-    printf("agent info: ip = %s port = %d\n", ip[1], port[1]);
+#ifdef DEBUG
+    fprintf(stderr, "START ^Q^\n");
+    fprintf(stderr, "sender info: ip = %s port = %d\n", ip[0], port[0]);
+    fprintf(stderr, "receiver info: ip = %s port = %d\n", ip[2], port[2]);
+    fprintf(stderr, "agent info: ip = %s port = %d\n", ip[1], port[1]);
+#endif
 
     int total_data = 0;
     int drop_data = 0;
     int segment_size, index;
-    char ipfrom[1000];
+    char ipfrom[IPlen];
     char *ptr;
     int portfrom;
     srand(time(NULL));
@@ -122,37 +130,45 @@ int main(int argc, char* argv[]){
                 }
                 total_data++;
                 if(s_tmp.head.fin == 1) {
-                    printf("get     fin\n");
+                    printf("get\tfin\n");
                     sendto(agentsocket, &s_tmp, segment_size, 0, (struct sockaddr *)&receiver, recv_size);
-                    printf("fwd     fin\n");
+                    printf("fwd\tfin\n");
                 }
                 else {
                     index = s_tmp.head.seqNumber;
                     if(rand() % 100 < 100 * loss_rate){
                         drop_data++;
-                        printf("drop	data	#%d,	loss rate = %.4f\n", index, (float)drop_data/total_data);
+                        printf("drop\tdata\t#%d,\tloss rate = %.4f\n", index, (float)drop_data/total_data);
                     } else{ 
-                        printf("get	data	#%d\n",index);
+                        printf("get\tdata\t#%d\n",index);
                         sendto(agentsocket, &s_tmp, segment_size, 0, (struct sockaddr *)&receiver,recv_size);
-                        printf("fwd	data	#%d,	loss rate = %.4f\n",index,(float)drop_data/total_data);
+                        printf("fwd\tdata\t#%d,\tloss rate = %.4f\n",index,(float)drop_data/total_data);
                     }
                 }
-            } else if(strcmp(ipfrom,ip[2]) == 0 && portfrom == port[2]) {
+            } else if(strcmp(ipfrom, ip[2]) == 0 && portfrom == port[2]) {
                 /*segment from receiver, ack*/
-                if(s_tmp.head.ack == 0) {
-                    fprintf(stderr, "receive non-ack segment from receiver. ERROR!\n");
-                    exit(1);
-                }
+                // if(s_tmp.head.ack == 0) {
+                //     fprintf(stderr, "receive non-ack segment from receiver. ERROR!\n");
+                //     exit(1);
+                // }
                 if(s_tmp.head.fin == 1) {
-                    printf("get     finack\n");
+                    printf("get\tfinack\n");
                     sendto(agentsocket, &s_tmp, segment_size, 0, (struct sockaddr *)&sender, sender_size);
-                    printf("fwd     finack\n");
+                    printf("fwd\tfinack\n");
                     break;
-                } else {
+                } else if (s_tmp.head.ack == 1) {
                     index = s_tmp.head.ackNumber;
-                    printf("get     ack	#%d\n", index);
+                    printf("get\tack\t#%d\n", index);
                     sendto(agentsocket, &s_tmp, segment_size, 0, (struct sockaddr *)&sender, sender_size);
-                    printf("fwd     ack	#%d\n", index);
+                    printf("fwd\tack\t#%d\n", index);
+                } else {
+#ifdef DEBUG
+                    printf("get\tcmd\t#%d\n", index);
+#endif
+                    sendto(agentsocket, &s_tmp, segment_size, 0, (struct sockaddr *)&sender, sender_size);
+#ifdef DEBUG
+                    printf("fwd\tcmd\t#%d\n", index);
+#endif
                 }
             }
         }

@@ -1,12 +1,8 @@
 #! /usr/bin/env bash
 
 if [[ $1 == "sender" ]]; then
-    if [[ -z $2 ]]; then
-        echo "Usage: ./exec.sh sender <source_file>"
-    else
-        echo "./server 7001 local 7002 ${2}"
-        ./server 7001 local 7002 ${2}
-    fi
+    echo "./sender 7001 local 7002"
+    ./sender 7001 local 7002
 elif [[ $1 == "receiver" ]]; then
     echo "./receiver 7003 local 7002"
     ./receiver 7003 local 7002
