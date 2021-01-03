@@ -68,13 +68,6 @@ void sendVideo(int senderSocket, struct sockaddr_in sender, struct sockaddr_in a
     uchar *frameBuffer = NULL;
     int putFrameSizeTotal, curPutFrameSize;
 
-    // /* create thread for recv ACK */
-    // pthread_t recvAckTid;
-    // if(pthread_create(&recvAckTid, NULL, recvAck, (void *)) != 0) {
-    //     fprintf(stderr, "Error for creating thread.\n");
-    //     exit(1);
-    // }
-
     while(!completeSendVideo) {
         /* create at least <windowSize> number of nodes in buffer to be sent */
         while(sendBuffer->nodeNum < windowSize && sendTask != endVideo) {
@@ -130,14 +123,6 @@ void sendVideo(int senderSocket, struct sockaddr_in sender, struct sockaddr_in a
                     fprintf(stderr, "Error. Unknown task.\n");
                     exit(1);
             }
-
-            // if(buffer->nodeNum == 1) {
-            //     curNodePtr = buffer->head;
-            // }
-            // else if(curNodePtr == NULL && buffer->nodeNum != 0) {
-            //     /* when moving window */
-            //     curNodePtr = buffer->tail;
-            // }
         }
 
         nextSendPtr = sendBuffer->head;

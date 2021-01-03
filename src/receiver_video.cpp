@@ -66,7 +66,6 @@ void flushBuffer()
 {
     printf("flush\n");
     while(recvBuffer->nodeNum > 0 && recvTask != endVideo) {
-        printf("nodeNum = %d\n", recvBuffer->nodeNum);
         switch(recvTask) {
             case resolutionPkt:
                 sscanf(recvBuffer->head->segment->data, "%d%d", &width, &height);
@@ -84,7 +83,6 @@ void flushBuffer()
                 else {
                     sscanf(recvBuffer->head->segment->data, "%d", &frameSize);
                     frameBuffer = (uchar *)malloc(sizeof(uchar) * frameSize);
-                    printf("frameSize = %d\n", frameSize);
                     putFrameSizeTotal = 0;
                     recvTask = framePkt;
                 }
@@ -101,19 +99,18 @@ void flushBuffer()
 
                     /* we can play video */
                     memcpy(imgClient.data, frameBuffer, sizeof(uchar) * frameSize);
-                    printf("play\n");
-                    //imshow("Video", imgClient);
-                    //char c = (char)waitKey(33.3333);
+                    imshow("Video", imgClient);
+                    char c = (char)waitKey(33.3333);
                     
                     if(frameBuffer != NULL) {
                         free(frameBuffer);
                         frameBuffer = NULL;
                     }
                     else {
-                        printf("frameBuffer is NULL\n");
+#ifdef DEBUG
+                        fprintf(stderr, "frameBuffer is NULL\n");
+#endif
                     }
-
-                    printf("after free\n");
                     recvTask = frameSizePkt;                   
                 }
                 break;
@@ -148,8 +145,6 @@ void recvVideoAndPlay(int receiverSocket, struct sockaddr_in receiver, struct so
             if(recvBuffer->nodeNum >= MAXRECVBUF) {
                 flushBuffer();
             }
-
-            /* need to drop this pkt? */
         }
         
         /* in the same or new round */
@@ -190,5 +185,6 @@ void recvVideoAndPlay(int receiverSocket, struct sockaddr_in receiver, struct so
             
         }
     }
+    destroyAllWindows();
     return;
 }

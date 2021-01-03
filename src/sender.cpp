@@ -76,5 +76,6 @@ int main(int argc, char *argv[])
     fprintf(stderr, "sendVideo() is successful\n");
 #endif
     
+    cap.release();
     return 0;
 }
