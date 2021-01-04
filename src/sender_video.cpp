@@ -129,8 +129,6 @@ void sendVideo(int senderSocket, struct sockaddr_in sender, struct sockaddr_in a
         sentNum = nextSendPtr->segment->head.seqNumber - 1;
         /* send at most <window size> number of pkts*/
         while(sentNum < recvAckNum + windowSize && nextSendPtr != NULL) {
-            nextSendPtr->segment->head.winSize = windowSize;
-            nextSendPtr->segment->head.base = recvAckNum;
             sendData(senderSocket, nextSendPtr->segment, &agent, agent_size);
             if(nextSendPtr->isSent) {
                 /* resend pkt */

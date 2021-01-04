@@ -28,8 +28,6 @@ typedef struct {
     int fin;          // boolean
     int syn;          // boolean, but we set it to 0
     int ack;          // boolean
-    int winSize;
-    int base;
 } header;
 
 typedef struct{

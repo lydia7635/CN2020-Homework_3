@@ -131,32 +131,26 @@ void recvVideoAndPlay(int receiverSocket, struct sockaddr_in receiver, struct so
     int completeRecvVideo = 0;
 
     int expectSeqNum = 1;
-    int expectBase = 0, expectWinSize = 1;
     recvBuffer = initBuffer();
 
     while(!completeRecvVideo) {
         SEGMENT *recvSegment = recvData(receiverSocket);
-        if(recvSegment->head.winSize != expectWinSize
-                || recvSegment->head.base != expectBase) {
-            
-            /* not in the same round */
-            expectWinSize = recvSegment->head.winSize;
-            expectBase = recvSegment->head.base;
-            if(recvBuffer->nodeNum >= MAXRECVBUF) {
-                flushBuffer();
-            }
-        }
-        
-        /* in the same or new round */
+
         if(recvSegment->head.seqNumber != expectSeqNum) {
             /* #<expectSeqNum> pkt is lost. Drop this pkt. */
-            // drop
-            printf("drop\tdata\t#%d\n", recvSegment->head.seqNumber);
+            /* drop */
+            if(recvSegment->head.fin) {
+                printf("drop\tfin\n");
+            }
+            else {
+                printf("drop\tdata\t#%d\n", recvSegment->head.seqNumber);
+            }
+            freeSegment(recvSegment);
             /* send ack back */
             sendAck(expectSeqNum - 1, 0, receiverSocket, &agent, agent_size);
         }
         else {
-            /* Recv expect pkt? */
+            /* Recv expect pkt */
             if( addToBuffer(recvSegment) ) {
                 if(recvSegment->head.fin) {
                     completeRecvVideo = 1;
@@ -174,15 +168,14 @@ void recvVideoAndPlay(int receiverSocket, struct sockaddr_in receiver, struct so
                 /* recvBuffer is full. */
                 if(recvSegment->head.fin) {
                     printf("drop\tfin\n");
-                    sendAck(expectSeqNum - 1, 0, receiverSocket, &agent, agent_size);
                 }
                 else {
                     printf("drop\tdata\t#%d\n", recvSegment->head.seqNumber);
-                    sendAck(expectSeqNum - 1, 0, receiverSocket, &agent, agent_size);
                 }
+                sendAck(expectSeqNum - 1, 0, receiverSocket, &agent, agent_size);
+                flushBuffer();
                 freeSegment(recvSegment);
             }
-            
         }
     }
     destroyAllWindows();
